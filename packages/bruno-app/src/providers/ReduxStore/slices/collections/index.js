@@ -23,7 +23,7 @@ import {
 } from 'utils/collections';
 import { uuid } from 'utils/common';
 import { PATH_SEPARATOR, getDirectoryName, getSubdirectoriesFromRoot } from 'utils/common/platform';
-import { parseQueryParams, splitOnFirst, stringifyQueryParams } from 'utils/url';
+import { parseQueryParams, parsePathParams, splitOnFirst, stringifyQueryParams } from 'utils/url';
 
 const initialState = {
   collections: [],
@@ -307,6 +307,7 @@ export const collectionsSlice = createSlice({
             url: action.payload.requestUrl,
             method: action.payload.requestMethod,
             params,
+            paths: [],
             headers: [],
             body: {
               mode: null,
@@ -350,9 +351,12 @@ export const collectionsSlice = createSlice({
           item.draft.request.url = action.payload.url;
 
           const parts = splitOnFirst(item.draft.request.url, '?');
+          const urlPaths = parsePathParams(parts[0]);
           const urlParams = parseQueryParams(parts[1]);
           const disabledParams = filter(item.draft.request.params, (p) => !p.enabled);
           let enabledParams = filter(item.draft.request.params, (p) => p.enabled);
+          let oldPaths = cloneDeep(item.draft.request.paths);
+          let newPaths = [];
 
           // try and connect as much as old params uid's as possible
           each(urlParams, (urlParam) => {
@@ -366,10 +370,27 @@ export const collectionsSlice = createSlice({
             }
           });
 
+          // filter the newest path param and compare with previous data that already inserted
+          newPaths = filter(urlPaths, (urlPath) => {
+            const existingPath = find(oldPaths, (p) => p.name === urlPath.name);
+            if (existingPath) {
+              return false;
+            }
+            urlPath.uid = uuid();
+            urlPath.enabled = true;
+            return true;
+          });
+
+          // remove path param that not used or deleted when typing url
+          oldPaths = filter(oldPaths, (urlPath) => {
+            return find(urlPaths, (p) => p.name === urlPath.name);
+          });
+
           // ultimately params get replaced with params in url + the disabled ones that existed prior
           // the query params are the source of truth, the url in the queryurl input gets constructed using these params
           // we however are also storing the full url (with params) in the url itself
           item.draft.request.params = concat(urlParams, disabledParams);
+          item.draft.request.paths = concat(newPaths, oldPaths);
         }
       }
     },
@@ -491,6 +512,24 @@ export const collectionsSlice = createSlice({
             item.draft.request.url = parts[0] + '?' + query;
           } else {
             item.draft.request.url = parts[0];
+          }
+        }
+      }
+    },
+    updatePathParam: (state, action) => {
+      const collection = findCollectionByUid(state.collections, action.payload.collectionUid);
+
+      if (collection) {
+        const item = findItemInCollection(collection, action.payload.itemUid);
+
+        if (item && isItemARequest(item)) {
+          if (!item.draft) {
+            item.draft = cloneDeep(item);
+          }
+          const path = find(item.draft.request.paths, (h) => h.uid === action.payload.path.uid);
+          if (path) {
+            path.name = action.payload.path.name;
+            path.value = action.payload.path.value;
           }
         }
       }
@@ -1418,6 +1457,7 @@ export const {
   addQueryParam,
   updateQueryParam,
   deleteQueryParam,
+  updatePathParam,
   addRequestHeader,
   updateRequestHeader,
   deleteRequestHeader,

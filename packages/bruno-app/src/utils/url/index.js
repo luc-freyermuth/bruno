@@ -26,6 +26,41 @@ export const parseQueryParams = (query) => {
   return filter(params, (p) => hasLength(p.name));
 };
 
+export const parsePathParams = (url) => {
+  let uri = url.slice();
+
+  if (!uri || !uri.length) {
+    return [];
+  }
+
+  if (uri.indexOf('http://') === -1 || uri.indexOf('https://') === -1) {
+    uri = `http://${uri}`;
+  }
+
+  if (!isValidUrl(uri)) {
+    throw 'Invalid URL format';
+  }
+
+  uri = new URL(uri);
+
+  let paths = uri.pathname.split('/');
+
+  paths = paths.reduce((acc, path) => {
+    if (path !== '' && path[0] === ':') {
+      let name = path.slice(1, path.length);
+      if (name) {
+        let isExist = find(acc, (path) => path.name === name);
+        if (!isExist) {
+          acc.push({ name: path.slice(1, path.length), value: '' });
+        }
+      }
+    }
+    return acc;
+  }, []);
+
+  return paths;
+};
+
 export const stringifyQueryParams = (params) => {
   if (!params || isEmpty(params)) {
     return '';

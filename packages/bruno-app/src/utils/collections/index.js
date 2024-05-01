@@ -385,6 +385,7 @@ export const transformRequestToSaveToFilesystem = (item) => {
       method: _item.request.method,
       url: _item.request.url,
       params: [],
+      paths: [],
       headers: [],
       auth: _item.request.auth,
       body: _item.request.body,
@@ -403,6 +404,14 @@ export const transformRequestToSaveToFilesystem = (item) => {
       value: param.value,
       description: param.description,
       enabled: param.enabled
+    });
+  });
+
+  each(_item.request.paths, (path) => {
+    itemToSave.request.paths.push({
+      uid: path.uid,
+      name: path.name,
+      value: path.value
     });
   });
 

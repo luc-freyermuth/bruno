@@ -438,6 +438,7 @@ const registerNetworkIpc = (mainWindow) => {
 
     const collectionRoot = get(collection, 'root', {});
     const _request = item.draft ? item.draft.request : item.request;
+    console.log(item);
     const request = prepareRequest(_request, collectionRoot, collectionPath);
     const envVars = getEnvVars(environment);
     const processEnvVars = getProcessEnvVars(collectionUid);

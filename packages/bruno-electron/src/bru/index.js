@@ -112,6 +112,7 @@ const bruToJson = (bru) => {
         method: _.upperCase(_.get(json, 'http.method')),
         url: _.get(json, 'http.url'),
         params: _.get(json, 'query', []),
+        paths: _.get(json, 'path', []),
         headers: _.get(json, 'headers', []),
         auth: _.get(json, 'auth', {}),
         body: _.get(json, 'body', {}),
@@ -163,6 +164,7 @@ const jsonToBru = (json) => {
       body: _.get(json, 'request.body.mode', 'none')
     },
     query: _.get(json, 'request.params', []),
+    path: _.get(json, 'request.paths', []),
     headers: _.get(json, 'request.headers', []),
     auth: _.get(json, 'request.auth', {}),
     body: _.get(json, 'request.body', {}),
